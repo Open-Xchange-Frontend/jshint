@@ -3007,6 +3007,7 @@ var JSHINT = (function () {
   (function (x) {
     x.nud = function (isclassdef) {
       var b, f, i, p, t, g;
+      var prevLine, isTrailingParameterObject, prevPos, currPos, isMultiple;
       var props = {}; // All properties, including accessors
       var tag = "";
 
@@ -3046,9 +3047,21 @@ var JSHINT = (function () {
 
       b = state.tokens.curr.line !== state.tokens.next.line;
       if (b) {
-        indent += state.option.indent;
-        if (state.tokens.next.from === indent + state.option.indent) {
+        // special check to handle parameter objects properly
+        prevLine = state.lines[state.tokens.curr.line - 1];
+        isTrailingParameterObject = /(, |\(){$/.test(prevLine);
+        prevPos = (prevLine.match(/^[ ]+/) || [''])[0].length + 1;
+        currPos = state.tokens.next.from;
+        isMultiple = ((currPos - 1) % state.option.indent) === 0;
+        if (isTrailingParameterObject && currPos > prevPos && isMultiple) {
+          // ok, indentation is a multiple of option.indent and
+          // greater than previos indentation
+          indent = currPos;
+        } else {
           indent += state.option.indent;
+          if (state.tokens.next.from === indent + state.option.indent) {
+            indent += state.option.indent;
+          }
         }
       }
 
